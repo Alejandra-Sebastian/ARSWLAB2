@@ -24,13 +24,8 @@ public class Consumer extends Thread{
     
     @Override
     public void run() {
-        while (true) {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(Consumer.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            if (queue.size() == 0){
+        while (true) {            
+            if (queue.isEmpty()){
                 synchronized(queue){
                     try {
                         queue.wait();
@@ -41,9 +36,16 @@ public class Consumer extends Thread{
             }
             else {
                 int elem=queue.poll();
-                System.out.println("Consumer consumes "+elem);                                
+                System.out.println("Consumer consumes "+elem);
+                synchronized(queue) {
+                    queue.notify();
+                }
             }
-            
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Consumer.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 }
