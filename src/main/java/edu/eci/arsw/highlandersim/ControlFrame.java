@@ -21,6 +21,8 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 import java.awt.Color;
 import javax.swing.JScrollBar;
+import edu.eci.arsw.highlandersim.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ControlFrame extends JFrame {
 
@@ -30,12 +32,14 @@ public class ControlFrame extends JFrame {
     private JPanel contentPane;
 
     private List<Immortal> immortals;
-
+    private String waiting = Thread.State.WAITING.toString();
     private JTextArea output;
     private JLabel statisticsLabel;
     private JScrollPane scrollPane;
     private JTextField numOfImmortals;
-
+    public static boolean done = false;
+     static Object aaa = new Object();
+    
     /**
      * Launch the application.
      */
@@ -87,18 +91,21 @@ public class ControlFrame extends JFrame {
         JButton btnPauseAndCheck = new JButton("Pause and check");
         btnPauseAndCheck.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-
-                /*
-				 * COMPLETAR
-                 */
-                int sum = 0;
+                for(Immortal im: immortals){
+                    im.setPause(true);
+                }int n = 0;
+                while(n<immortals.size()){
+                    if(immortals.get(n).getState().toString().equals(waiting)){
+                        n++;
+                    }
+                }
+                
+                AtomicInteger sum = new AtomicInteger(0); //Para asegurar que solo 1 entra al recurso
                 for (Immortal im : immortals) {
-                    sum += im.getHealth();
+                    sum.addAndGet(im.getHealth().get());
                 }
 
                 statisticsLabel.setText("<html>"+immortals.toString()+"<br>Health sum:"+ sum);
-                
-                
 
             }
         });
@@ -108,10 +115,12 @@ public class ControlFrame extends JFrame {
 
         btnResume.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                /**
-                 * IMPLEMENTAR
-                 */
-
+                for (Immortal im : immortals) {
+                    im.setPause(false);
+                }
+                synchronized(aaa){
+                    aaa.notifyAll();
+                }
             }
         });
 
@@ -127,6 +136,12 @@ public class ControlFrame extends JFrame {
 
         JButton btnStop = new JButton("STOP");
         btnStop.setForeground(Color.RED);
+        btnStop.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                done = true;
+            }
+        });
+        
         toolBar.add(btnStop);
 
         scrollPane = new JScrollPane();
@@ -136,8 +151,7 @@ public class ControlFrame extends JFrame {
         output.setEditable(false);
         scrollPane.setViewportView(output);
         
-        
-        statisticsLabel = new JLabel("Immortals total health:");
+        statisticsLabel = new JLabel("Immortals total health: " );
         contentPane.add(statisticsLabel, BorderLayout.SOUTH);
 
     }
@@ -152,7 +166,7 @@ public class ControlFrame extends JFrame {
             List<Immortal> il = new LinkedList<Immortal>();
 
             for (int i = 0; i < ni; i++) {
-                Immortal i1 = new Immortal("im" + i, il, DEFAULT_IMMORTAL_HEALTH, DEFAULT_DAMAGE_VALUE,ucb);
+                Immortal i1 = new Immortal("im" + i, il, new AtomicInteger(DEFAULT_IMMORTAL_HEALTH), DEFAULT_DAMAGE_VALUE,ucb,i);
                 il.add(i1);
             }
             return il;
